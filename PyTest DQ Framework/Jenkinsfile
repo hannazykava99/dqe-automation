@@ -14,23 +14,29 @@ pipeline {
             }
         }
 
-        stage('Clone Repo') {
+        stage('Clone directly into workspace') {
             steps {
                 sh """
-                echo "Cloning repository..."
-                git clone ${REPO_URL}
-                ls -R dqe-automation
+                echo "Workspace before clone:"
+                pwd
+                ls -la
+
+                echo "Cloning repo into current workspace root..."
+                git clone ${REPO_URL} .
+
+                echo "Workspace after clone:"
+                ls -R
                 """
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                dir("dqe-automation/PyTest DQ Framework") {
+                dir("PyTest DQ Framework") {
                     sh """
                     echo "Installing dependencies..."
-                    python3 -m pip install --break-system-packages --upgrade pip
-                    pip install --break-system-packages setuptools wheel
+
+                    python3 -m pip install --break-system-packages setuptools wheel
                     pip install --break-system-packages -r requirements.txt
                     """
                 }
@@ -39,9 +45,10 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                dir("dqe-automation/PyTest DQ Framework") {
+                dir("PyTest DQ Framework") {
                     sh """
                     echo "Running tests..."
+
                     pytest tests \
                         --db_host=host.containers.internal \
                         --db_port=5434 \
@@ -58,7 +65,7 @@ pipeline {
 
     post {
         always {
-            dir("dqe-automation/PyTest DQ Framework") {
+            dir("PyTest DQ Framework") {
                 archiveArtifacts artifacts: 'html_report/**', allowEmptyArchive: true
 
                 publishHTML(target: [
