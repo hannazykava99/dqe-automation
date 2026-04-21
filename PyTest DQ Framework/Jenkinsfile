@@ -4,7 +4,6 @@ pipeline {
     environment {
         POSTGRES_SECRET = credentials('jenkins-postgres-credentials')
         REPO_URL = 'https://github.com/hannazykava99/dqe-automation.git'
-        PARQUET_PATH = "parquet_data"
     }
 
     stages {
@@ -15,31 +14,44 @@ pipeline {
             }
         }
 
-        stage('Clone directly into workspace') {
+        stage('Clone Repo') {
             steps {
-                sh """
-                echo "Workspace before clone:"
-                pwd
-                ls -la
-
-                echo "Cloning repo into current workspace root..."
+                sh '''
+                echo "Cloning repo into workspace root..."
                 git clone ${REPO_URL} .
 
-                echo "Workspace after clone:"
-                ls -R
-                """
+                echo "Workspace content:"
+                ls -la
+                '''
+            }
+        }
+
+        stage('Prepare Parquet Data') {
+            steps {
+                dir("PyTest DQ Framework") {
+                    sh '''
+                    echo "Copying parquet_data..."
+
+                    rm -rf parquet_data
+
+                    cp -r /parquet_data .
+
+                    echo "Parquet folder check:"
+                    ls parquet_data
+                    '''
+                }
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 dir("PyTest DQ Framework") {
-                    sh """
+                    sh '''
                     echo "Installing dependencies..."
 
                     python3 -m pip install --break-system-packages setuptools wheel
                     pip install --break-system-packages -r requirements.txt
-                    """
+                    '''
                 }
             }
         }
@@ -47,7 +59,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 dir("PyTest DQ Framework") {
-                    sh """
+                    sh '''
                     echo "Running tests..."
 
                     pytest tests \
@@ -58,7 +70,7 @@ pipeline {
                         --db_password=$POSTGRES_SECRET_PSW \
                         --html=html_report/report.html \
                         --self-contained-html
-                    """
+                    '''
                 }
             }
         }
