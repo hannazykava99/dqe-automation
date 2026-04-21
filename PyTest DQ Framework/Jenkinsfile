@@ -4,6 +4,7 @@ pipeline {
     environment {
         POSTGRES_SECRET = credentials('jenkins-postgres-credentials')
         REPO_URL = 'https://github.com/hannazykava99/dqe-automation.git'
+        PARQUET_PATH = "parquet_data"
     }
 
     stages {
