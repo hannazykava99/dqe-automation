@@ -15,6 +15,12 @@ pipeline {
             }
         }
 
+        stage('Debug structure') {
+            steps {
+                sh 'ls -R dqe-automation'
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 dir("dqe-automation/PyTest DQ Framework") {
