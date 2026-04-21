@@ -21,6 +21,23 @@ pipeline {
             }
         }
 
+        stage('Show Git Folder Content') {
+    steps {
+        dir("dqe-automation/PyTest DQ Framework") {
+            sh '''
+            echo "PWD:"
+            pwd
+
+            echo "LIST FILES:"
+            ls -la
+
+            echo "GIT TRACKED FILES:"
+            git ls-files || true
+            '''
+        }
+    }
+}
+
         stage('Install Dependencies') {
             steps {
                 dir("dqe-automation/PyTest DQ Framework") {
