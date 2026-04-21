@@ -3,48 +3,36 @@ pipeline {
 
     environment {
         POSTGRES_SECRET = credentials('jenkins-postgres-credentials')
-        PARQUET_PATH = "/parquet_data"
+        REPO_URL = 'https://github.com/hannazykava99/dqe-automation.git'
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Clean Workspace') {
             steps {
-                git url: 'https://github.com/hannazykava99/dqe-automation.git',
-                    branch: 'main'
+                deleteDir()
             }
         }
 
-        stage('Debug structure') {
+        stage('Clone Repo') {
             steps {
-                sh 'ls -R dqe-automation'
+                sh """
+                echo "Cloning repository..."
+                git clone ${REPO_URL}
+                ls -R dqe-automation
+                """
             }
         }
-
-        stage('Show Git Folder Content') {
-    steps {
-        dir("dqe-automation/PyTest DQ Framework") {
-            sh '''
-            echo "PWD:"
-            pwd
-
-            echo "LIST FILES:"
-            ls -la
-
-            echo "GIT TRACKED FILES:"
-            git ls-files || true
-            '''
-        }
-    }
-}
 
         stage('Install Dependencies') {
             steps {
                 dir("dqe-automation/PyTest DQ Framework") {
-                    sh '''
+                    sh """
+                    echo "Installing dependencies..."
+                    python3 -m pip install --break-system-packages --upgrade pip
                     pip install --break-system-packages setuptools wheel
                     pip install --break-system-packages -r requirements.txt
-                    '''
+                    """
                 }
             }
         }
@@ -52,16 +40,17 @@ pipeline {
         stage('Run Tests') {
             steps {
                 dir("dqe-automation/PyTest DQ Framework") {
-                    sh '''
+                    sh """
+                    echo "Running tests..."
                     pytest tests \
-                    --db_host=host.containers.internal \
-                    --db_port=5434 \
-                    --db_name=mydatabase \
-                    --db_user=$POSTGRES_SECRET_USR \
-                    --db_password=$POSTGRES_SECRET_PSW \
-                    --html=html_report/report.html \
-                    --self-contained-html
-                    '''
+                        --db_host=host.containers.internal \
+                        --db_port=5434 \
+                        --db_name=mydatabase \
+                        --db_user=$POSTGRES_SECRET_USR \
+                        --db_password=$POSTGRES_SECRET_PSW \
+                        --html=html_report/report.html \
+                        --self-contained-html
+                    """
                 }
             }
         }
