@@ -14,8 +14,7 @@ pipeline {
 
         stage('Clean Workspace') {
             steps {
-                // Remove everything from workspace before starting build
-                // This ensures a clean environment with no leftover files
+                // Remove everything from workspace to ensure a clean environment
                 deleteDir()
             }
         }
@@ -25,7 +24,7 @@ pipeline {
                 sh '''
                 echo "Cloning repository into workspace root..."
 
-                // Clone repository directly into current workspace directory
+                # Clone repository directly into workspace root directory
                 git clone ${REPO_URL} .
 
                 echo "Workspace content after clone:"
@@ -38,16 +37,16 @@ pipeline {
             steps {
                 dir("PyTest DQ Framework") {
                     sh '''
-                    echo "Preparing parquet data for tests..."
+                    echo "Preparing parquet data for test execution..."
 
-                    // Remove old parquet data if it exists
+                    # Remove old parquet data if it exists
                     rm -rf parquet_data
 
-                    // Copy fresh parquet data from container root (/parquet_data)
-                    // into the project directory so tests can access it
+                    # Copy fresh parquet data from container root (/parquet_data)
+                    # into the project directory so tests can access it
                     cp -r /parquet_data .
 
-                    echo "Verifying parquet_data content:"
+                    echo "Verifying parquet_data structure:"
                     ls parquet_data
                     '''
                 }
@@ -58,12 +57,12 @@ pipeline {
             steps {
                 dir("PyTest DQ Framework") {
                     sh '''
-                    echo "Installing Python dependencies..."
+                    echo "Installing project dependencies..."
 
-                    // Install basic Python packaging tools
+                    # Install basic Python packaging tools
                     python3 -m pip install --break-system-packages setuptools wheel
 
-                    // Install project dependencies from requirements.txt
+                    # Install all required project dependencies
                     pip install --break-system-packages -r requirements.txt
                     '''
                 }
@@ -74,9 +73,9 @@ pipeline {
             steps {
                 dir("PyTest DQ Framework") {
                     sh '''
-                    echo "Running pytest test suite..."
+                    echo "Executing pytest test suite..."
 
-                    // Execute tests with database connection parameters
+                    # Run data quality tests with database connection parameters
                     pytest tests \
                         --db_host=host.containers.internal \
                         --db_port=5434 \
@@ -99,7 +98,7 @@ pipeline {
                 // Archive HTML report as Jenkins build artifact
                 archiveArtifacts artifacts: 'html_report/**', allowEmptyArchive: true
 
-                // Publish HTML report in Jenkins UI
+                // Publish HTML report in Jenkins UI for easy viewing
                 publishHTML(target: [
                     allowMissing: true,
                     keepAll: true,
