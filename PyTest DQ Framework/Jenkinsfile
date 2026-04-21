@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    environment {
+        POSTGRES_SECRET = credentials('jenkins-postgres-credentials')
+        PARQUET_PATH = "/parquet_data"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/hannazykava99/dqe-automation.git',
+                    branch: 'main'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir("dqe-automation/PyTest DQ Framework") {
+                    sh '''
+                    pip install --break-system-packages setuptools wheel
+                    pip install --break-system-packages -r requirements.txt
+                    '''
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                dir("dqe-automation/PyTest DQ Framework") {
+                    sh '''
+                    pytest tests \
+                    --db_host=host.containers.internal \
+                    --db_port=5434 \
+                    --db_name=mydatabase \
+                    --db_user=$POSTGRES_SECRET_USR \
+                    --db_password=$POSTGRES_SECRET_PSW \
+                    --html=html_report/report.html \
+                    --self-contained-html
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            dir("dqe-automation/PyTest DQ Framework") {
+                archiveArtifacts artifacts: 'html_report/**', allowEmptyArchive: true
+
+                publishHTML(target: [
+                    allowMissing: true,
+                    keepAll: true,
+                    reportDir: 'html_report',
+                    reportFiles: 'report.html',
+                    reportName: 'HTML Test Report'
+                ])
+            }
+        }
+    }
+}
